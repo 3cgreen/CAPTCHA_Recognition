@@ -1,4 +1,5 @@
 import cv2
+import queue
 import imageio
 import numpy as np
 from PIL import Image
@@ -61,7 +62,7 @@ def pic_download(picname):
     url = 'http://219.226.132.42/CheckCode.aspx'
     res = request.urlopen(url)
     img = res.read()
-    with open(r'E:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': picname}, 'wb') as f:
+    with open(r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': picname}, 'wb') as f:
         f.write(img)
 
 
@@ -104,8 +105,44 @@ def sliceCast(pic):
             if pic[i, j] == 0:
                 array[j] += 1
     plt.subplot(122), plt.plot(np.arange(w), array)
-    print(array)
     plt.show()
+
+
+def cfs(img):
+    """传入二值化后的图片进行连通域分割"""
+    w, h = img.shape
+    visited = set()
+    q = queue.Queue()
+    offset = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+    cuts = []
+    for x in range(w):
+        for y in range(h):
+            x_axis = []
+            # y_axis = []
+            # y_axis = []
+            if img[x, y] == 0 and (x, y) not in visited:
+                q.put((x, y))
+                visited.add((x, y))
+            while not q.empty():
+                x_p, y_p = q.get()
+                for x_offset, y_offset in offset:
+                    x_c, y_c = x_p + x_offset, y_p + y_offset
+                    if (x_c, y_c) in visited:
+                        continue
+                    visited.add((x_c, y_c))
+                    try:
+                        if img[x_c, y_c] == 0:
+                            q.put((x_c, y_c))
+                            x_axis.append(x_c)
+                            # y_axis.append(y_c)
+                    except:
+                        pass
+            if x_axis:
+                min_x, max_x = min(x_axis), max(x_axis)
+                if max_x - min_x > 3:
+                    # 宽度小于3的认为是噪点，根据需要修改
+                    cuts.append((min_x, max_x))
+    return cuts
 
 
 if __name__ == '__main__':
@@ -113,11 +150,11 @@ if __name__ == '__main__':
     #     pic_no = i + 1
     #     pic_download(pic_no)
     for i in range(50):
-        uri = r'E:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': i + 1}
-        # uri = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': i + 1}
-        uril = r'E:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_G.jpg' % {'no': i + 1}
-        urib = r'E:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_S.jpg' % {'no': i + 1}
-        urin = r'E:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_X.jpg' % {'no': i + 1}
+        uri = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': i + 1}
+        # uri = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': i + 1}
+        uril = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_G.jpg' % {'no': i + 1}
+        urib = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_S.jpg' % {'no': i + 1}
+        urin = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_X.jpg' % {'no': i + 1}
         # image = cv2.imread(uri)
         image = Image.open(uri, "r")
         # image = imageio.imread(uri)
@@ -128,10 +165,14 @@ if __name__ == '__main__':
             if image is None:
                 print("none")
                 exit(0)
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2RGBA)
+        # image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
+        binarizedpic = binarizationOrigin(grey(image))
+        noiseEliminatedpic = noise_eliminate(binarizedpic)
         # binarization(image)
-        picture = Image.open(urin, "r")
-        sliceCast(np.array(picture))
+        # picture = Image.open(uri, "r")
+        sliceCast(noiseEliminatedpic)
+        cutarray = cfs(noiseEliminatedpic)
+        print(cutarray)
         # with Image.open(uri, 'r') as image:
         #     grey(image).save(uril, 'gif')
         #     Image.fromarray(np.uint8(binarizationOrigin(grey(image)))).save(urib, 'gif')
