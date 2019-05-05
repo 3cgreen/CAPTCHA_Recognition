@@ -33,8 +33,8 @@ def binarization(pic):
 def binarizationOrigin(pic):
     picgray = np.array(pic)
     height, width = picgray.shape
-    for i in range(1, height-1):
-        for j in range(1, width-1):
+    for i in range(1, height - 1):
+        for j in range(1, width - 1):
             greyvalue = picgray[i, j]
             if greyvalue <= 220:
                 picgray[i, j] = 0
@@ -42,10 +42,10 @@ def binarizationOrigin(pic):
                 picgray[i, j] = 255
     for i in range(height):
         picgray[i, 0] = 255
-        picgray[i, width-1] = 255
+        picgray[i, width - 1] = 255
     for j in range(width):
         picgray[0, j] = 255
-        picgray[height-1, j] = 255
+        picgray[height - 1, j] = 255
     return picgray
 
 
@@ -62,7 +62,7 @@ def pic_download(picname):
     url = 'http://219.226.132.42/CheckCode.aspx'
     res = request.urlopen(url)
     img = res.read()
-    with open(r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': picname}, 'wb') as f:
+    with open(r'E:\Pictures\CAPTCHA\NCEPU-STC_1\CAPTCHA%(no)04d.jpg' % {'no': picname}, 'wb') as f:
         f.write(img)
 
 
@@ -71,24 +71,24 @@ def noise_eliminate(picarray):
     neighbor = 0
     for i in range(height):
         for j in range(width):
-            if i-1 >= 0 and picarray[i-1, j] == 0:
+            if i - 1 >= 0 and picarray[i - 1, j] == 0:
                 neighbor += 1
-            if i+1 < height and picarray[i+1, j] == 0:
+            if i + 1 < height and picarray[i + 1, j] == 0:
                 neighbor += 1
-            if j-1 >= 0 and picarray[i, j-1] == 0:
+            if j - 1 >= 0 and picarray[i, j - 1] == 0:
                 neighbor += 1
-            if j+1 < width and picarray[i, j+1] == 0:
+            if j + 1 < width and picarray[i, j + 1] == 0:
                 neighbor += 1
             if neighbor == 0:
                 picarray[i, j] = 255
                 continue
-            if i-1 >= 0 and j-1 >= 0 and picarray[i-1, j-1] == 0:
+            if i - 1 >= 0 and j - 1 >= 0 and picarray[i - 1, j - 1] == 0:
                 neighbor += 1
-            if i-1 >= 0 and j+1 < width and picarray[i-1, j+1] == 0:
+            if i - 1 >= 0 and j + 1 < width and picarray[i - 1, j + 1] == 0:
                 neighbor += 1
-            if i+1 < height and j+1 < width and picarray[i+1, j+1] == 0:
+            if i + 1 < height and j + 1 < width and picarray[i + 1, j + 1] == 0:
                 neighbor += 1
-            if i+1 < height and j-1 >= 0 and picarray[i+1, j-1] == 0:
+            if i + 1 < height and j - 1 >= 0 and picarray[i + 1, j - 1] == 0:
                 neighbor += 1
             if neighbor < 3:
                 picarray[i, j] = 255
@@ -104,8 +104,63 @@ def sliceCast(pic):
         for j in range(w):
             if pic[i, j] == 0:
                 array[j] += 1
+    # print(array)
     plt.subplot(122), plt.plot(np.arange(w), array)
     plt.show()
+    suffixoffset = 0
+    originarray = array
+    while array[0] == 0:
+        array = np.delete(array, 0)
+        suffixoffset += 1
+    while array[len(array)-1] == 0:
+        array = np.delete(array, len(array)-1)
+    # print(array)
+    counts = len(array)
+    cutlocations = [suffixoffset-1]
+    for x in range(counts):
+        if array[x] == 0 and array[x-1] != 0:
+            cutlocations.append(x + suffixoffset)
+    cutlocations.append(len(array) + suffixoffset)
+    print(cutlocations)
+    x = 0
+    while len(cutlocations) < 5:
+        print(str(x+1) + " " + str(x) + " " + str(len(cutlocations)))
+        if cutlocations[x + 1] - cutlocations[x] > 15:
+            middlenum = int((cutlocations[x+1] - cutlocations[x]) / 2 + cutlocations[x])
+            tempregion = originarray[middlenum - 4:middlenum + 3    :1]
+            cutlocations.insert(x+1, np.argmin(tempregion) + middlenum - 2)
+            # cutlocations.insert(x+1, middlenum)
+            print(cutlocations)
+        else:
+            x += 1
+    print(cutlocations)
+    cutimage = Image.fromarray(pic)
+    for x in range(4):
+        box = (cutlocations[x], 0, cutlocations[x + 1], h)
+        plt.subplot(141 + x), plt.imshow(cutimage.crop(box), "gray")
+    plt.show()
+
+
+
+
+def Opening(pic):
+    pic_temp = pic.copy()
+    height, width = pic_temp.shape
+    for x in range(height):
+        for y in range(width):
+            pic_temp[x, y] = 255 - pic_temp[x, y]
+    # 创建矩形结构单元
+    g = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    # 形态学处理,开运算
+    img_open = cv2.morphologyEx(pic_temp, cv2.MORPH_OPEN, g)
+    # plt.subplot(121), plt.imshow(pic_temp, "gray"), plt.title("Source Pic")
+    # plt.subplot(122), plt.imshow(img_open, "gray"), plt.title("Opened Pic")
+    # plt.show()
+    height, width = img_open.shape
+    for x in range(height):
+        for y in range(width):
+            img_open[x, y] = 255 - img_open[x, y]
+    return img_open
 
 
 def cfs(img):
@@ -150,11 +205,11 @@ if __name__ == '__main__':
     #     pic_no = i + 1
     #     pic_download(pic_no)
     for i in range(50):
-        uri = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d.jpg' % {'no': i + 1}
+        uri = r'E:\Pictures\CAPTCHA\NCEPU-STC_1\CAPTCHA%(no)04d.jpg' % {'no': i + 1}
         # uri = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': i + 1}
-        uril = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_G.jpg' % {'no': i + 1}
-        urib = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_S.jpg' % {'no': i + 1}
-        urin = r'F:\Pictures\CAPTCHA\NCEPU-STC\CAPTCHA%(no)04d_X.jpg' % {'no': i + 1}
+        uril = r'E:\Pictures\CAPTCHA\NCEPU-STC_1\CAPTCHA%(no)04d_G.jpg' % {'no': i + 1}
+        urib = r'E:\Pictures\CAPTCHA\NCEPU-STC_1\CAPTCHA%(no)04d_S.jpg' % {'no': i + 1}
+        urin = r'E:\Pictures\CAPTCHA\NCEPU-STC_1\CAPTCHA%(no)04d_X.jpg' % {'no': i + 1}
         # image = cv2.imread(uri)
         image = Image.open(uri, "r")
         # image = imageio.imread(uri)
@@ -170,9 +225,11 @@ if __name__ == '__main__':
         noiseEliminatedpic = noise_eliminate(binarizedpic)
         # binarization(image)
         # picture = Image.open(uri, "r")
-        sliceCast(noiseEliminatedpic)
-        cutarray = cfs(noiseEliminatedpic)
+        # sliceCast(noiseEliminatedpic)
+        cutarray = cfs(Opening(noiseEliminatedpic))
+        sliceCast(Opening(noiseEliminatedpic))
         print(cutarray)
+        # exit(0)
         # with Image.open(uri, 'r') as image:
         #     grey(image).save(uril, 'gif')
         #     Image.fromarray(np.uint8(binarizationOrigin(grey(image)))).save(urib, 'gif')
