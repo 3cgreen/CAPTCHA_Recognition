@@ -59,7 +59,7 @@ def pic_download_N(picname):
     url = 'http://my.cnki.net/Register/CheckCode.aspx'
     res = request.urlopen(url)
     img = res.read()
-    with open(r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': picname}, 'wb') as f:
+    with open(r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': picname}, 'wb') as f:
         f.write(img)
 
 
@@ -147,10 +147,10 @@ if __name__ == '__main__':
     #     pic_no = i + 1
     #     pic_download_N(pic_no)
     for i in range(50):
-        uri = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': i + 1}
-        uril = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_G.jpg' % {'no': i + 1}
-        urib = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_S.jpg' % {'no': i + 1}
-        urin = r'F:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_X.jpg' % {'no': i + 1}
+        uri = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d.jpg' % {'no': i + 1}
+        uril = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_G.jpg' % {'no': i + 1}
+        urib = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_S.jpg' % {'no': i + 1}
+        urin = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_X.jpg' % {'no': i + 1}
         image = cv2.imread(uri)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         plt.subplot(221), plt.imshow(image, "gray"), plt.axis("off")
