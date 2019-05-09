@@ -1,6 +1,7 @@
 import cv2
 import queue
 import numpy as np
+from PIL import Image
 from urllib import request
 from matplotlib import pyplot as plt
 import Binarization
@@ -36,14 +37,14 @@ def binarizationOrigin(pic):
 
 def binarization(pic):
     # im = cv2.cvtColor(pic, cv2.COLOR_BGR2GRAY)
-    # plt.subplot(131), plt.imshow(im, "gray")
-    # plt.title("source image"), plt.xticks([]), plt.yticks([])
-    # plt.subplot(132), plt.hist(im.ravel(), 256)
-    # plt.title("Histogram"), plt.xticks([]), plt.yticks([])
+    plt.subplot(131), plt.imshow(pic, "gray")
+    plt.title("source image"), plt.xticks([]), plt.yticks([])
+    plt.subplot(132), plt.hist(pic.ravel(), 256)
+    plt.title("Histogram"), plt.xticks([]), plt.yticks([])
     threshold, th1 = cv2.threshold(pic, 0, 255, cv2.THRESH_OTSU)  # 方法选择为THRESH_OTSU
     plt.subplot(133), plt.imshow(th1, "gray")
     plt.title("OTSU,threshold is " + str(threshold)), plt.xticks([]), plt.yticks([])
-    # plt.show()
+    plt.show()
     return th1, threshold
 
 
@@ -94,15 +95,51 @@ def noise_eliminate(picarray):
 
 
 def sliceCast(pic):
-    plt.subplot(121), plt.imshow(pic, cmap="Greys_r")
+    sample = pic.astype(np.uint8)
+    # plt.subplot(121), plt.imshow(pic, cmap="Greys_r")
     (h, w) = pic.shape  # 返回高和宽
     array = np.zeros(w, dtype=int)
     for i in range(h):
         for j in range(w):
             if pic[i, j] == 0:
                 array[j] += 1
-    plt.subplot(122), plt.plot(np.arange(w), array)
+    # plt.subplot(122), plt.plot(np.arange(w), array)
+    # plt.show()
+    # img1 = cv2.imread(r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki0001.jpg')
+    img1 = sample.copy()
+    plt.imshow(img1), plt.axis("off")
     plt.show()
+    # gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    # ret, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)  # 如果图像是二值图，这一行就可以删除
+    # 寻找轮廓
+    contours, hierarchy = cv2.findContours(img1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+    # 画出轮廓，-1,表示所有轮廓，画笔颜色为(0, 255, 0)，即Green，粗细为1
+    cv2.drawContours(img1, contours, -1, (0, 255, 0), 1)
+
+    # 显示图片
+    plt.imshow(img1), plt.axis("off")
+    plt.show()
+
+
+def Opening(pic):
+    pic_temp = pic.copy()
+    plt.subplot(121), plt.imshow(pic_temp, "gray"), plt.title("Source Pic")
+    height, width = pic_temp.shape
+    for x in range(height):
+        for y in range(width):
+            pic_temp[x, y] = 255 - pic_temp[x, y]
+    # 创建矩形结构单元
+    g = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    # 形态学处理,开运算
+    img_open = cv2.morphologyEx(pic_temp, cv2.MORPH_OPEN, g)
+    height, width = img_open.shape
+    for x in range(height):
+        for y in range(width):
+            img_open[x, y] = 255 - img_open[x, y]
+    plt.subplot(122), plt.imshow(img_open, "gray"), plt.title("Opened Pic")
+    plt.show()
+    return img_open
 
 
 def cfs(img):
@@ -152,22 +189,24 @@ if __name__ == '__main__':
         urib = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_S.jpg' % {'no': i + 1}
         urin = r'E:\Pictures\CAPTCHA\Cnki_1\CAPTCHA_Cnki%(no)04d_X.jpg' % {'no': i + 1}
         image = cv2.imread(uri)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        plt.subplot(221), plt.imshow(image, "gray"), plt.axis("off")
-        plt.title("Origin Gray Graph")
-        otsuimage, threshold = binarization(image)
-        plt.subplot(222), plt.imshow(otsuimage, "gray"), plt.axis("off")
-        plt.title("OTSU,threshold is " + str(threshold))
-        image = binarizationOrigin(image)
-        plt.subplot(223), plt.imshow(image, "gray"), plt.axis("off")
-        plt.title("Binarized Graph")
-        image = noise_eliminate(image)
-        plt.subplot(224), plt.imshow(image, "gray"), plt.axis("off")
-        plt.title("Eliminated Noise Graph")
-        plt.show()
-        cutarray = cfs(otsuimage)
-        print(cutarray)
-        # exit(0)
+        imageg = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # plt.subplot(221), plt.imshow(image, "gray"), plt.axis("off")
+        # plt.title("Origin Gray Graph")
+        otsuimage, threshold = binarization(imageg)
+        # plt.subplot(222), plt.imshow(otsuimage, "gray"), plt.axis("off")
+        # plt.title("OTSU,threshold is " + str(threshold))
+        imagem = binarizationOrigin(imageg)
+        # plt.subplot(223), plt.imshow(image, "gray"), plt.axis("off")
+        # plt.title("Binarized Graph")
+        imagem = noise_eliminate(imageg)
+        # plt.subplot(224), plt.imshow(image, "gray"), plt.axis("off")
+        # plt.title("Eliminated Noise Graph")
+        # plt.show()
+        # cutarray = cfs(otsuimage)
+        # print(cutarray)
+        samplepic = Opening(otsuimage)
+        sliceCast(samplepic)
+        exit(0)
         # image = binarization(image)
         # cv2.imwrite(urin, image)
         # binarization(image)
